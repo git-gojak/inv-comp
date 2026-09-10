@@ -1,5 +1,5 @@
-﻿# ============================================================
-# INVENTARIS KOMPUTER V4
+# ============================================================
+# INVENTARIS KOMPUTER V5
 # ============================================================
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -35,7 +35,8 @@ if ([string]::IsNullOrWhiteSpace($model) -or
     $model -match "System Product Name|To Be Filled|Default string") {
     $model = "-"
 }
-# Rapikan vendor untuk inventaris.
+
+# Rapikan vendor untuk inventaris
 if ($manufacturer -match '^Dell') {
     $manufacturer = "Dell"
 }
@@ -80,92 +81,118 @@ $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 
 $cpuName = if ($cpu.Name) {
     ($cpu.Name.Trim() -replace '\(R\)|\(TM\)', '' -replace '\s+', ' ').Trim()
-} else {
+}
+else {
     "-"
 }
-$core = if ($cpu.NumberOfCores) { $cpu.NumberOfCores } else { "-" }
+
+$core = if ($cpu.NumberOfCores) {
+    $cpu.NumberOfCores
+}
+else {
+    "-"
+}
+
 $thread = if ($cpu.NumberOfLogicalProcessors) {
     $cpu.NumberOfLogicalProcessors
-} else {
+}
+else {
     "-"
 }
 
 # ------------------------------------------------------------
 # RAM
+# Format:
+# 8 GB (8 GB) | DDR5 | 5600 MHz
+# 8 GB (4 GB + 4 GB) | DDR4 | 3200 / 2667 MHz
+# 16 GB (8 GB + 8 GB) | DDR4 | 3200 MHz
 # ------------------------------------------------------------
 
 $ramModules = @(Get-CimInstance Win32_PhysicalMemory)
 
-$ramTotalGB = [math]::Round(
-    (($ramModules | Measure-Object Capacity -Sum).Sum / 1GB), 0
-)
+if ($ramModules.Count -gt 0) {
 
-function Get-RamType($type) {
-    switch ($type) {
-        20 { "DDR" }
-        21 { "DDR2" }
-        22 { "DDR2 FB-DIMM" }
-        24 { "DDR3" }
-        26 { "DDR4" }
-        27 { "LPDDR" }
-        28 { "LPDDR2" }
-        29 { "LPDDR3" }
-        30 { "LPDDR4" }
-        34 { "DDR5" }
-        default { "Unknown" }
-    }
-}
+    $ramTotalGB = [math]::Round(
+        (($ramModules | Measure-Object Capacity -Sum).Sum / 1GB), 0
+    )
 
-$ramTypes = @()
-$ramSpeeds = @()
-$ramModuleList = @()
-
-foreach ($ram in $ramModules) {
-
-    $capacityGB = [math]::Round($ram.Capacity / 1GB, 0)
-    $type = Get-RamType $ram.SMBIOSMemoryType
-    $speed = $ram.Speed
-
-    $ramTypes += $type
-
-    if ($speed) {
-        $ramSpeeds += "$speed MHz"
+    function Get-RamType($type) {
+        switch ($type) {
+            20 { "DDR" }
+            21 { "DDR2" }
+            22 { "DDR2 FB-DIMM" }
+            24 { "DDR3" }
+            26 { "DDR4" }
+            27 { "LPDDR" }
+            28 { "LPDDR2" }
+            29 { "LPDDR3" }
+            30 { "LPDDR4" }
+            34 { "DDR5" }
+            default { "Unknown" }
+        }
     }
 
-    $ramModuleList += "$capacityGB GB"
+    $ramTypes = @()
+    $ramSpeeds = @()
+    $ramModuleList = @()
+
+    foreach ($ram in $ramModules) {
+
+        $capacityGB = [math]::Round($ram.Capacity / 1GB, 0)
+        $type = Get-RamType $ram.SMBIOSMemoryType
+        $speed = $ram.Speed
+
+        $ramTypes += $type
+
+        if ($speed) {
+            $ramSpeeds += "$speed MHz"
+        }
+
+        $ramModuleList += "$capacityGB GB"
+    }
+
+    $ramTypeText = ($ramTypes | Select-Object -Unique) -join " / "
+    $ramSpeedText = ($ramSpeeds | Select-Object -Unique) -join " / "
+    $ramModuleText = $ramModuleList -join " + "
+
+    if ([string]::IsNullOrWhiteSpace($ramTypeText)) {
+        $ramTypeText = "-"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ramSpeedText)) {
+        $ramSpeedText = "-"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ramModuleText)) {
+        $ramModuleText = "-"
+    }
+
+    $ramText = "$ramTotalGB GB ($ramModuleText) | $ramTypeText | $ramSpeedText"
 }
-
-$ramTypeText = ($ramTypes | Select-Object -Unique) -join " / "
-$ramSpeedText = ($ramSpeeds | Select-Object -Unique) -join " / "
-$ramModuleText = $ramModuleList -join " + "
-
-if ([string]::IsNullOrWhiteSpace($ramTotalGB)) {
-    $ramTotalGB = "-"
-}
-
-if ([string]::IsNullOrWhiteSpace($ramTypeText)) {
-    $ramTypeText = "-"
-}
-
-if ([string]::IsNullOrWhiteSpace($ramSpeedText)) {
-    $ramSpeedText = "-"
-}
-
-if ([string]::IsNullOrWhiteSpace($ramModuleText)) {
-    $ramModuleText = "-"
+else {
+    $ramText = "-"
 }
 
 # ------------------------------------------------------------
 # STORAGE
 # Model/nama storage + kapasitas aktual yang terdeteksi Windows.
-# Contoh: P0327 Phison 512GB (477 GB)
+#
+# Contoh:
+# P0327 Phison 512GB (477 GB)
+# WDC WD10EZEX-60WN4A1 (931 GB)
+# ADATA LEGEND 850 LITE (477 GB)
 # ------------------------------------------------------------
 
 $disks = @(Get-CimInstance Win32_DiskDrive)
 
 $storageInfo = foreach ($disk in $disks) {
 
-    $modelDisk = if ($disk.Model) { $disk.Model.Trim() } else { "" }
+    $modelDisk = if ($disk.Model) {
+        $disk.Model.Trim()
+    }
+    else {
+        ""
+    }
 
     if ([string]::IsNullOrWhiteSpace($modelDisk)) {
         continue
@@ -176,10 +203,13 @@ $storageInfo = foreach ($disk in $disks) {
     $modelDisk = $modelDisk.Trim()
 
     if ($disk.Size) {
+
         $sizeGB = [math]::Round($disk.Size / 1GB, 0)
+
         "$modelDisk ($sizeGB GB)"
     }
     else {
+
         $modelDisk
     }
 }
@@ -210,6 +240,7 @@ if ([string]::IsNullOrWhiteSpace($gpuText)) {
     $gpuText = "-"
 }
 
+# ------------------------------------------------------------
 # NETWORK
 # Hanya adapter jaringan fisik yang aktif.
 # VirtualBox, VMware, Hyper-V dan adapter virtual lainnya diabaikan.
@@ -253,17 +284,31 @@ $ipText = ($ipList | Select-Object -Unique) -join " / "
 $macText = ($macList | Select-Object -Unique) -join " / "
 $gatewayText = ($gatewayList | Select-Object -Unique) -join " / "
 
-if ([string]::IsNullOrWhiteSpace($ipText)) { $ipText = "-" }
-if ([string]::IsNullOrWhiteSpace($macText)) { $macText = "-" }
-if ([string]::IsNullOrWhiteSpace($gatewayText)) { $gatewayText = "-" }
+if ([string]::IsNullOrWhiteSpace($ipText)) {
+    $ipText = "-"
+}
 
+if ([string]::IsNullOrWhiteSpace($macText)) {
+    $macText = "-"
+}
+
+if ([string]::IsNullOrWhiteSpace($gatewayText)) {
+    $gatewayText = "-"
+}
+
+# ------------------------------------------------------------
 # WINDOWS
 # Format ringkas:
 # Microsoft Windows 11 Pro -> Win 11 Pro
 # Microsoft Windows 10 Home -> Win 10 Home
 # ------------------------------------------------------------
 
-$caption = if ($os.Caption) { $os.Caption.Trim() } else { "" }
+$caption = if ($os.Caption) {
+    $os.Caption.Trim()
+}
+else {
+    ""
+}
 
 if ($caption -match 'Windows\s+11\s+(.+)$') {
 
@@ -300,6 +345,7 @@ else {
 
 # ------------------------------------------------------------
 # DATA INVENTARIS
+# TOTAL = 15 FIELD
 # ------------------------------------------------------------
 
 $data = @{
@@ -312,8 +358,7 @@ $data = @{
     core            = $core
     thread          = $thread
 
-    ramTotal        = "$ramTotalGB GB"
-    ramModule       = "$ramModuleText | $ramTypeText | $ramSpeedText"
+    ram             = $ramText
 
     storage         = $storageText
     gpu             = $gpuText
@@ -326,7 +371,7 @@ $data = @{
 }
 
 # ------------------------------------------------------------
-# KIRIM KE GOOGLE SHEET
+# TAMPILKAN HASIL
 # ------------------------------------------------------------
 
 Write-Host "Computer Name : $computerName"
@@ -334,12 +379,22 @@ Write-Host "Manufacturer  : $manufacturer"
 Write-Host "Model         : $model"
 Write-Host "Asset/Serial  : $serial"
 Write-Host "CPU           : $cpuName"
-Write-Host "RAM           : $ramTotalGB GB"
+Write-Host "Core          : $core"
+Write-Host "Thread        : $thread"
+Write-Host "RAM           : $ramText"
 Write-Host "Storage       : $storageText"
+Write-Host "GPU           : $gpuText"
+Write-Host "IP Address    : $ipText"
+Write-Host "MAC Address   : $macText"
+Write-Host "Gateway       : $gatewayText"
 Write-Host "OS            : $windowsName"
 Write-Host ""
 Write-Host "Mengirim data ke Google Sheet..."
 Write-Host ""
+
+# ------------------------------------------------------------
+# KIRIM KE GOOGLE SHEET
+# ------------------------------------------------------------
 
 try {
 
@@ -369,6 +424,7 @@ try {
         Write-Host ""
         Write-Host $response.message
         Write-Host ""
+
     }
 
 }
@@ -381,6 +437,7 @@ catch {
     Write-Host ""
     Write-Host $_.Exception.Message
     Write-Host ""
+
 }
 
 Write-Host "Tekan ENTER untuk selesai..."
