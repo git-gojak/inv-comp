@@ -222,11 +222,16 @@ if ([string]::IsNullOrWhiteSpace($storageText)) {
 
 # ------------------------------------------------------------
 # GPU
+# Hanya GPU fisik.
+# Adapter virtual/remote diabaikan.
 # ------------------------------------------------------------
 
 $gpu = @(
     Get-CimInstance Win32_VideoController |
-    Where-Object { $_.Name } |
+    Where-Object {
+        $_.Name -and
+        $_.Name -notmatch 'Microsoft Remote Display Adapter|Microsoft Basic Display Adapter|Remote Display|Virtual|VMware|VirtualBox|Hyper-V'
+    } |
     Select-Object -ExpandProperty Name
 )
 
@@ -239,6 +244,7 @@ $gpuText = ($gpu |
 if ([string]::IsNullOrWhiteSpace($gpuText)) {
     $gpuText = "-"
 }
+
 
 # ------------------------------------------------------------
 # NETWORK
