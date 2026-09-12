@@ -80,6 +80,8 @@ foreach($g in @(Get-CimInstance Win32_VideoController)){
 }
 $gpuParts=@($gpuParts|Select-Object -Unique)
 $gpu=if($gpuParts.Count){$gpuParts -join ' + '}else{'-'}
+$gpu = $gpu -replace '\(R\)', '' -replace '\(TM\)', ''
+$gpu = ($gpu -replace '\s+', ' ').Trim()
 
 $ip=@();$mac=@();$gw=@()
 foreach($n in @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=True')){
