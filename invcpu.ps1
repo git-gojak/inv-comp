@@ -1,31 +1,52 @@
 # INVENTARIS KOMPUTER V6
 
-$ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Continue'
 
-# URL Web App V6
+# ============================================================
+
+# URL WEB APP V6
+
+# ============================================================
 
 $WebAppUrl = 'https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec'
 
+# ============================================================
+
+# FUNGSI BANTU
+
+# ============================================================
+
 function Safe($v) {
-if ($null -eq $v) { return '-' }
+if ($null -eq $v) {
+return '-'
+}
+
+```
 $s = "$v".Trim()
-if ([string]::IsNullOrWhiteSpace($s)) { return '-' }
+
+if ([string]::IsNullOrWhiteSpace($s)) {
+    return '-'
+}
+
 return $s
+```
+
 }
 
 function Serial($v) {
 $s = Safe $v
-$bad = @(
-'TO BE FILLED BY O.E.M.',
-'TO BE FILLED BY OEM',
-'DEFAULT STRING',
-'SYSTEM SERIAL NUMBER',
-'UNKNOWN',
-'NONE',
-'NOT SPECIFIED'
-)
 
 ```
+$bad = @(
+    'TO BE FILLED BY O.E.M.',
+    'TO BE FILLED BY OEM',
+    'DEFAULT STRING',
+    'SYSTEM SERIAL NUMBER',
+    'UNKNOWN',
+    'NONE',
+    'NOT SPECIFIED'
+)
+
 if ($bad -contains $s.ToUpperInvariant()) {
     return '-'
 }
@@ -35,30 +56,33 @@ return $s
 
 }
 
-function RamType($smbios,$legacy) {
-$map = @{
-20='DDR'
-21='DDR2'
-22='DDR2 FB-DIMM'
-24='DDR3'
-26='DDR4'
-27='LPDDR'
-28='LPDDR2'
-29='LPDDR3'
-30='LPDDR4'
-31='LPDDR5'
-34='DDR5'
-}
+function RamType($smbios, $legacy) {
 
 ```
-$n = 0
-
-if ([int]::TryParse("$smbios",[ref]$n) -and $map.ContainsKey($n)) {
-    return $map[$n]
+$map = @{
+    20 = 'DDR'
+    21 = 'DDR2'
+    22 = 'DDR2 FB-DIMM'
+    24 = 'DDR3'
+    26 = 'DDR4'
+    27 = 'LPDDR'
+    28 = 'LPDDR2'
+    29 = 'LPDDR3'
+    30 = 'LPDDR4'
+    31 = 'LPDDR5'
+    34 = 'DDR5'
 }
 
-if ([int]::TryParse("$legacy",[ref]$n)) {
-    switch($n) {
+$n = 0
+
+if ([int]::TryParse("$smbios", [ref]$n)) {
+    if ($map.ContainsKey($n)) {
+        return $map[$n]
+    }
+}
+
+if ([int]::TryParse("$legacy", [ref]$n)) {
+    switch ($n) {
         20 { return 'DDR' }
         21 { return 'DDR2' }
         22 { return 'DDR2 FB-DIMM' }
@@ -74,27 +98,28 @@ return 'Unknown'
 }
 
 function Manufacturer($v) {
+
+```
 $s = Safe $v
 $u = $s.ToUpperInvariant()
 
-```
-if($u -match 'DELL') {
+if ($u -match 'DELL') {
     return 'Dell'
 }
 
-if($u -match 'HP|HEWLETT') {
+if ($u -match 'HP|HEWLETT') {
     return 'HP'
 }
 
-if($u -match 'ASUSTEK|ASUS') {
+if ($u -match 'ASUSTEK|ASUS') {
     return 'ASUS'
 }
 
-if($u -match 'ACER') {
+if ($u -match 'ACER') {
     return 'Acer'
 }
 
-if($u -match 'ZYREX') {
+if ($u -match 'ZYREX') {
     return 'Zyrex'
 }
 
@@ -105,9 +130,12 @@ return $s
 
 # ============================================================
 
-# PENGAMBILAN DATA KOMPUTER
+# AMBIL DATA SISTEM
 
 # ============================================================
+
+Write-Host ''
+Write-Host 'Mengambil data komputer...' -ForegroundColor Cyan
 
 $cs = Get-CimInstance Win32_ComputerSystem
 $bios = Get-CimInstance Win32_BIOS
@@ -133,34 +161,34 @@ $ramModules = @(Get-CimInstance Win32_PhysicalMemory)
 
 $total = ($ramModules | Measure-Object Capacity -Sum).Sum
 
-$totalGB = if($total) {
-[math]::Round($total / 1GB, 0)
+if ($total) {
+$totalGB = [math]::Round($total / 1GB, 0)
 }
 else {
-'-'
+$totalGB = '-'
 }
 
 $parts = @()
 
-foreach($r in $ramModules) {
+foreach ($r in $ramModules) {
 
 ```
-$gb = if($r.Capacity) {
-    [math]::Round($r.Capacity / 1GB, 0)
+if ($r.Capacity) {
+    $gb = [math]::Round($r.Capacity / 1GB, 0)
 }
 else {
-    '-'
+    $gb = '-'
 }
 
 $type = RamType $r.SMBIOSMemoryType $r.MemoryType
 
 $speed = $r.ConfiguredClockSpeed
 
-if(!$speed) {
+if (!$speed) {
     $speed = $r.Speed
 }
 
-if($speed) {
+if ($speed) {
     $parts += "$gb GB $type $speed MHz"
 }
 else {
@@ -170,11 +198,11 @@ else {
 
 }
 
-$ram = if($parts.Count) {
-"$totalGB GB (" + ($parts -join ' + ') + ')'
+if ($parts.Count -gt 0) {
+$ram = "$totalGB GB (" + ($parts -join ' + ') + ')'
 }
 else {
-'-'
+$ram = '-'
 }
 
 # ============================================================
@@ -187,14 +215,14 @@ $disks = @(Get-CimInstance Win32_DiskDrive)
 
 $sp = @()
 
-foreach($d in $disks) {
+foreach ($d in $disks) {
 
 ```
-$cap = if($d.Size) {
-    "$([math]::Round($d.Size / 1GB, 0)) GB"
+if ($d.Size) {
+    $cap = "$([math]::Round($d.Size / 1GB, 0)) GB"
 }
 else {
-    '-'
+    $cap = '-'
 }
 
 $sp += "$(Safe $d.Model) ($cap)"
@@ -202,11 +230,11 @@ $sp += "$(Safe $d.Model) ($cap)"
 
 }
 
-$storage = if($sp.Count) {
-$sp -join ' + '
+if ($sp.Count -gt 0) {
+$storage = $sp -join ' + '
 }
 else {
-'-'
+$storage = '-'
 }
 
 # ============================================================
@@ -217,17 +245,19 @@ else {
 
 $gpuParts = @()
 
-foreach($g in @(Get-CimInstance Win32_VideoController)) {
+$videoControllers = @(Get-CimInstance Win32_VideoController)
+
+foreach ($g in $videoControllers) {
 
 ```
 $n = Safe $g.Name
 $u = $n.ToUpperInvariant()
 
-if($u -match 'MICROSOFT REMOTE|BASIC DISPLAY|REMOTE|VIRTUAL|VMWARE|VIRTUALBOX|HYPER-V') {
+if ($u -match 'MICROSOFT REMOTE|BASIC DISPLAY|REMOTE|VIRTUAL|VMWARE|VIRTUALBOX|HYPER-V') {
     continue
 }
 
-if($n -ne '-') {
+if ($n -ne '-') {
     $gpuParts += $n
 }
 ```
@@ -236,11 +266,11 @@ if($n -ne '-') {
 
 $gpuParts = @($gpuParts | Select-Object -Unique)
 
-$gpu = if($gpuParts.Count) {
-$gpuParts -join ' + '
+if ($gpuParts.Count -gt 0) {
+$gpu = $gpuParts -join ' + '
 }
 else {
-'-'
+$gpu = '-'
 }
 
 # ============================================================
@@ -253,18 +283,20 @@ $ip = @()
 $mac = @()
 $gw = @()
 
-foreach($n in @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=True')) {
+$networkAdapters = @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=True')
+
+foreach ($n in $networkAdapters) {
 
 ```
 $u = (Safe $n.Description).ToUpperInvariant()
 
-if($u -match 'VIRTUALBOX|VMWARE|HYPER-V|VIRTUAL ETHERNET|TAP|TUN|LOOPBACK|CONTAINER|WSL|VPN') {
+if ($u -match 'VIRTUALBOX|VMWARE|HYPER-V|VIRTUAL ETHERNET|TAP|TUN|LOOPBACK|CONTAINER|WSL|VPN') {
     continue
 }
 
-foreach($x in @($n.IPAddress)) {
+foreach ($x in @($n.IPAddress)) {
 
-    if(
+    if (
         $x -match '^\d{1,3}(\.\d{1,3}){3}$' -and
         $x -notmatch '^169\.254\.'
     ) {
@@ -272,13 +304,13 @@ foreach($x in @($n.IPAddress)) {
     }
 }
 
-if($n.MACAddress) {
+if ($n.MACAddress) {
     $mac += $n.MACAddress
 }
 
-foreach($x in @($n.DefaultIPGateway)) {
+foreach ($x in @($n.DefaultIPGateway)) {
 
-    if($x -match '^\d{1,3}(\.\d{1,3}){3}$') {
+    if ($x -match '^\d{1,3}(\.\d{1,3}){3}$') {
         $gw += $x
     }
 }
@@ -286,32 +318,32 @@ foreach($x in @($n.DefaultIPGateway)) {
 
 }
 
-$ipAddress = if($ip.Count) {
-($ip | Select-Object -Unique) -join ', '
+if ($ip.Count -gt 0) {
+$ipAddress = ($ip | Select-Object -Unique) -join ', '
 }
 else {
-'-'
+$ipAddress = '-'
 }
 
-$macAddress = if($mac.Count) {
-($mac | Select-Object -Unique) -join ', '
+if ($mac.Count -gt 0) {
+$macAddress = ($mac | Select-Object -Unique) -join ', '
 }
 else {
-'-'
+$macAddress = '-'
 }
 
-$gateway = if($gw.Count) {
-($gw | Select-Object -Unique) -join ', '
+if ($gw.Count -gt 0) {
+$gateway = ($gw | Select-Object -Unique) -join ', '
 }
 else {
-'-'
+$gateway = '-'
 }
 
 $operatingSystem = Safe $os.Caption
 
 # ============================================================
 
-# TAMPILKAN INVENTARIS
+# TAMPILKAN HASIL
 
 # ============================================================
 
@@ -335,13 +367,13 @@ Write-Host ''
 
 # ============================================================
 
-# INPUT PENGGUNA
+# NAMA PENGGUNA
 
 # ============================================================
 
 $userName = Read-Host 'Nama Pengguna'
 
-if([string]::IsNullOrWhiteSpace($userName)) {
+if ([string]::IsNullOrWhiteSpace($userName)) {
 $userName = '-'
 }
 else {
@@ -355,43 +387,47 @@ $userName = $userName.Trim()
 # ============================================================
 
 $data = [ordered]@{
-computerName   = $computerName
-manufacturer   = $manufacturer
-model          = $model
-assetSerialID  = $assetSerialID
-cpu            = $cpu
-core           = "$core"
-thread         = "$thread"
-ram            = $ram
-storage        = $storage
-gpu            = $gpu
-ipAddress      = $ipAddress
-macAddress     = $macAddress
-gateway        = $gateway
+computerName    = $computerName
+manufacturer    = $manufacturer
+model           = $model
+assetSerialID   = $assetSerialID
+cpu             = $cpu
+core            = "$core"
+thread          = "$thread"
+ram             = $ram
+storage         = $storage
+gpu             = $gpu
+ipAddress       = $ipAddress
+macAddress      = $macAddress
+gateway         = $gateway
 operatingSystem = $operatingSystem
-userName       = $userName
+userName        = $userName
 }
 
 # ============================================================
 
-# KIRIM KE GOOGLE APPS SCRIPT V6
+# VALIDASI URL
 
 # ============================================================
 
-if(
-$WebAppUrl -eq 'PASTE_URL_WEB_APP_V6_DI_SINI' -or
-[string]::IsNullOrWhiteSpace($WebAppUrl)
+if (
+[string]::IsNullOrWhiteSpace($WebAppUrl) -or
+$WebAppUrl -eq 'PASTE_URL_WEB_APP_V6_DI_SINI'
 ) {
 
 ```
 Write-Host ''
-Write-Host 'URL Web App V6 belum diisi.' -ForegroundColor Red
+Write-Host 'ERROR: URL Web App V6 belum diisi.' -ForegroundColor Red
 ```
 
 }
 else {
 
 ```
+# ========================================================
+# KIRIM KE GOOGLE APPS SCRIPT
+# ========================================================
+
 try {
 
     $json = $data | ConvertTo-Json -Depth 5
@@ -403,16 +439,17 @@ try {
         -Uri $WebAppUrl `
         -Method Post `
         -ContentType 'application/json; charset=utf-8' `
-        -Body $json
+        -Body $json `
+        -ErrorAction Stop
 
     Write-Host ''
     Write-Host "Status : $($response.status)" -ForegroundColor Green
 
-    if($response.message) {
+    if ($response.message) {
         Write-Host "Pesan  : $($response.message)"
     }
 
-    if($response.changes) {
+    if ($response.changes) {
 
         Write-Host 'Perubahan:'
 
@@ -425,17 +462,13 @@ try {
 catch {
 
     Write-Host ''
-    Write-Host "Pengiriman gagal: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host 'PENGIRIMAN GAGAL' -ForegroundColor Red
+    Write-Host "Error : $($_.Exception.Message)" -ForegroundColor Red
 
 }
 ```
 
 }
 
-# ============================================================
-
-# SELESAI
-
-# ============================================================
-
+Write-Host ''
 Read-Host 'Tekan Enter untuk keluar'
