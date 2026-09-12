@@ -2,6 +2,7 @@
 $ErrorActionPreference = 'SilentlyContinue'
 
 # Isi dengan URL Web App V6 setelah deployment Apps Script.
+
 $WebAppUrl = 'https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec'
 
 function Safe($v) {
@@ -119,7 +120,7 @@ $data=[ordered]@{
 }
 
 if($WebAppUrl -eq 'https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec'){
-    Write-Host 'https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec.' -ForegroundColor Yellow
+    Write-Host 'https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec' -ForegroundColor Yellow
 }else{
     try{
         $json=$data|ConvertTo-Json -Depth 5
