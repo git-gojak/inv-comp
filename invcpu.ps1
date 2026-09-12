@@ -120,16 +120,46 @@ $data=[ordered]@{
  userName=$userName
 }
 
-if($WebAppUrl -eq 'https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec'){
-    Write-Host 'https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec' -ForegroundColor Yellow
-}else{
-    try{
-        $json=$data|ConvertTo-Json -Depth 5
-        $response=Invoke-RestMethod -Uri $WebAppUrl -Method Post -ContentType 'application/json; charset=utf-8' -Body $json
-        Write-Host ''
+try{
+    $json=$data | ConvertTo-Json -Depth 5
+
+    Write-Host ''
+    Write-Host 'Mengirim data ke DB-Main...' -ForegroundColor Yellow
+
+    $response=Invoke-RestMethod `
+        -Uri $WebAppUrl `
+        -Method Post `
+        -ContentType 'application/json; charset=utf-8' `
+        -Body $json `
+        -TimeoutSec 60 `
+        -ErrorAction Stop
+
+    Write-Host ''
+    Write-Host '========== HASIL ==========' -ForegroundColor Green
+
+    if($response.status){
         Write-Host "Status : $($response.status)" -ForegroundColor Green
-        if($response.message){Write-Host "Pesan  : $($response.message)"}
-        if($response.changes){Write-Host 'Perubahan:';$response.changes|ForEach-Object{Write-Host " - $_"}}
-    }catch{Write-Host "Pengiriman gagal: $($_.Exception.Message)" -ForegroundColor Red}
+    }
+
+    if($response.message){
+        Write-Host "Pesan  : $($response.message)"
+    }
+
+    if($response.changes){
+        Write-Host 'Perubahan:'
+        $response.changes | ForEach-Object {
+            Write-Host " - $_"
+        }
+    }
+
+    if(-not $response.status){
+        $response | ConvertTo-Json -Depth 10
+    }
 }
+catch{
+    Write-Host ''
+    Write-Host 'PENGIRIMAN GAGAL' -ForegroundColor Red
+    Write-Host "Error : $($_.Exception.Message)" -ForegroundColor Red
+}
+
 Read-Host 'Tekan Enter untuk keluar'
