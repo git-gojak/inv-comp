@@ -48,6 +48,35 @@ $cpuInfo=Get-CimInstance Win32_Processor | Select-Object -First 1
 $computerName=Safe $env:COMPUTERNAME
 $manufacturer=Manufacturer $cs.Manufacturer
 $model=Safe $cs.Model
+if ([string]::IsNullOrWhiteSpace($manufacturer) -or
+    $manufacturer -match "System manufacturer|To Be Filled|Default string") {
+    $manufacturer = "-"
+}
+
+if ([string]::IsNullOrWhiteSpace($model) -or
+    $model -match "System Product Name|To Be Filled|Default string") {
+    $model = "-"
+}
+
+# Rapikan vendor untuk inventaris
+if ($manufacturer -match '^Dell') {
+    $manufacturer = "Dell"
+}
+elseif ($manufacturer -match '^HP|Hewlett') {
+    $manufacturer = "HP"
+}
+elseif ($manufacturer -match '^ASUSTeK|^ASUS') {
+    $manufacturer = "ASUS"
+}
+elseif ($manufacturer -match '^Acer') {
+    $manufacturer = "Acer"
+}
+elseif ($manufacturer -match '^Zyrex') {
+    $manufacturer = "Zyrex"
+}
+elseif ($manufacturer -eq "-") {
+    $manufacturer = "Rakitan"
+}
 $assetSerialID=Serial $bios.SerialNumber
 $cpu=Safe $cpuInfo.Name
 $cpu = $cpu -replace '\(R\)', '' -replace '\(TM\)', ''
