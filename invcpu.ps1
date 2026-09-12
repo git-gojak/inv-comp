@@ -119,7 +119,7 @@ $data=[ordered]@{
 }
 
 if($WebAppUrl -eq 'https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec'){
-    Write-Host 'URL Web App V6 belum diisi.' -ForegroundColor Yellow
+    Write-Host 'https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec' -ForegroundColor Yellow
 }else{
     try{
         $json=$data|ConvertTo-Json -Depth 5
