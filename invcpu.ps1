@@ -50,6 +50,8 @@ $manufacturer=Manufacturer $cs.Manufacturer
 $model=Safe $cs.Model
 $assetSerialID=Serial $bios.SerialNumber
 $cpu=Safe $cpuInfo.Name
+$cpu = $cpu -replace '\(R\)', '' -replace '\(TM\)', ''
+$cpu = ($cpu -replace '\s+', ' ').Trim()
 $core=Safe $cpuInfo.NumberOfCores
 $thread=Safe $cpuInfo.NumberOfLogicalProcessors
 
