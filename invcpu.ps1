@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'SilentlyContinue'
 
 # Isi dengan URL Web App V6 setelah deployment Apps Script.
-$WebAppUrl = 'PASTE_URL_WEB_APP_V6_DI_SINI'
+$WebAppUrl = 'https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec'
 
 function Safe($v) {
     if ($null -eq $v) { return '-' }
@@ -118,7 +118,7 @@ $data=[ordered]@{
  userName=$userName
 }
 
-if($WebAppUrl -eq 'PASTE_URL_WEB_APP_V6_DI_SINI'){
+if($WebAppUrl -eq 'https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec'){
     Write-Host 'URL Web App V6 belum diisi.' -ForegroundColor Yellow
 }else{
     try{
