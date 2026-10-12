@@ -37,6 +37,7 @@ function Manufacturer($v) {
     if($u -match 'ASUSTEK|ASUS'){return 'ASUS'}
     if($u -match 'ACER'){return 'Acer'}
     if($u -match 'ZYREX'){return 'Zyrex'}
+    if($u -match 'Lenovo'){return 'Lenovo'}
     return $s
 }
 
