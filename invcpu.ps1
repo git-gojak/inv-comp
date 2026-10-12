@@ -37,7 +37,6 @@ function Manufacturer($v) {
     if($u -match 'ASUSTEK|ASUS'){return 'ASUS'}
     if($u -match 'ACER'){return 'Acer'}
     if($u -match 'ZYREX'){return 'Zyrex'}
-    if($u -match 'Lenovo'){return 'Lenovo'}
     return $s
 }
 
@@ -139,7 +138,9 @@ Write-Host "Thread        : $thread"
 Write-Host "RAM           : $ram"
 Write-Host "Storage       : $storage"
 Write-Host "GPU           : $gpu"
+Write-Host "IP Address    : $ipAddress"
 Write-Host "MAC Address   : $macAddress"
+Write-Host "Gateway       : $gateway"
 Write-Host "Operating Sys : $operatingSystem"
 Write-Host ''
 
