@@ -3,7 +3,8 @@
 # Payload sesuai invcpu.gs V6. Tidak mengirim IP Address/Gateway.
 set -u
 set -o pipefail
-WEB_APP_URL="https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec"
+#WEB_APP_URL="https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec"
+WEB_APP_URL="https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec"
 
 clean(){ local v="${1:-}"; v="$(printf '%s' "$v" | tr '\r\n' '  ' | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"; [[ -n "$v" ]] && printf '%s' "$v" || printf '%s' '-'; }
 read_file(){ [[ -r "$1" ]] && clean "$(cat "$1" 2>/dev/null)" || printf '%s' '-'; }
