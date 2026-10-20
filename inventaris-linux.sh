@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # INVENTARIS KOMPUTER LINUX V1 - Ubuntu
-# Payload sesuai invcpu.gs V6. Tidak mengirim IP Address/Gateway.
 set -u
 set -o pipefail
-#WEB_APP_URL="https://script.google.com/macros/s/AKfycbxgisOungxy6BFG3F20VA_xCrAucobxqYGYljO5sk5SpHYO3_MhyYKu5dlCXf-KOxOCRw/exec"
 WEB_APP_URL="https://script.google.com/macros/s/AKfycbxvesg8H0dFcaIflLMAxawxS_Vd0ya6jOD20q79mgycFVusoycM9Wc2QexL15rTgXqTPQ/exec"
 
 clean(){ local v="${1:-}"; v="$(printf '%s' "$v" | tr '\r\n' '  ' | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"; [[ -n "$v" ]] && printf '%s' "$v" || printf '%s' '-'; }
@@ -39,17 +37,6 @@ if command -v lspci >/dev/null 2>&1; then
 fi
 gpu="$(clean "$gpu")"
 
-mac="-"
-for p in /sys/class/net/*; do
- [[ -r "$p/address" ]] || continue
- iface="${p##*/}"
- [[ "$iface" == "lo" ]] && continue
- case "$iface" in docker*|veth*|virbr*|br-*|tun*|tap*|wg*|zt*|tailscale*) continue;; esac
- [[ -e "$p/device" ]] || continue
- candidate="$(cat "$p/address" 2>/dev/null || true)"
- if [[ -n "$candidate" && "$candidate" != "00:00:00:00:00:00" ]]; then mac="$candidate"; break; fi
-done
-mac="$(clean "$mac")"
 operating_system="-"
 if [[ -r /etc/os-release ]]; then operating_system="$(. /etc/os-release; printf '%s' "${PRETTY_NAME:-${NAME:-Ubuntu}}")"; fi
 operating_system="$(clean "$operating_system")"
@@ -66,12 +53,12 @@ printf '%-18s: %s\n' "Thread" "$thread"
 printf '%-18s: %s\n' "RAM" "$ram"
 printf '%-18s: %s\n' "Storage" "$storage"
 printf '%-18s: %s\n' "GPU" "$gpu"
-printf '%-18s: %s\n' "MAC Address" "$mac"
 printf '%-18s: %s\n' "Operating System" "$operating_system"
 read -r -p "Nama pengguna PC: " user_name
 user_name="$(clean "$user_name")"
 
-payload="$(COMPUTER_NAME="$computer_name" MANUFACTURER="$manufacturer" MODEL="$model" SERIAL="$serial" CPU_NAME="$cpu" CORE_COUNT="$core" THREAD_COUNT="$thread" RAM_INFO="$ram" STORAGE_INFO="$storage" GPU_INFO="$gpu" MAC_ADDR="$mac" OS_INFO="$operating_system" USER_NAME="$user_name" python3 - <<'PY'
+#payload="$(COMPUTER_NAME="$computer_name" MANUFACTURER="$manufacturer" MODEL="$model" SERIAL="$serial" CPU_NAME="$cpu" CORE_COUNT="$core" THREAD_COUNT="$thread" RAM_INFO="$ram" STORAGE_INFO="$storage" GPU_INFO="$gpu" MAC_ADDR="$mac" OS_INFO="$operating_system" USER_NAME="$user_name" python3 - <<'PY'
+payload="$(COMPUTER_NAME="$computer_name" MANUFACTURER="$manufacturer" MODEL="$model" SERIAL="$serial" CPU_NAME="$cpu" CORE_COUNT="$core" THREAD_COUNT="$thread" RAM_INFO="$ram" STORAGE_INFO="$storage" GPU_INFO="$gpu" OS_INFO="$operating_system" USER_NAME="$user_name" python3 - <<'PY'
 import json, os
 print(json.dumps({
  "computerName":os.getenv("COMPUTER_NAME","-"),
@@ -84,7 +71,6 @@ print(json.dumps({
  "ram":os.getenv("RAM_INFO","-"),
  "storage":os.getenv("STORAGE_INFO","-"),
  "gpu":os.getenv("GPU_INFO","-"),
- "macAddress":os.getenv("MAC_ADDR","-"),
  "operatingSystem":os.getenv("OS_INFO","-"),
  "userName":os.getenv("USER_NAME","-")
 }, ensure_ascii=False))
@@ -92,7 +78,6 @@ PY
 )" || { echo "ERROR: Gagal membuat JSON."; exit 1; }
 
 echo
-echo "IP Address dan Gateway tidak dikumpulkan."
 read -r -p "Kirim data ini ke DB-Main/Riwayat? Ketik YA untuk lanjut: " confirm
 [[ "$confirm" == "YA" ]] || { echo "Dibatalkan; tidak ada data yang dikirim."; exit 0; }
 
