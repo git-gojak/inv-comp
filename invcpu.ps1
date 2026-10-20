@@ -117,17 +117,6 @@ $gpu=if($gpuParts.Count){$gpuParts -join ' + '}else{'-'}
 $gpu = $gpu -replace '\(R\)', '' -replace '\(TM\)', ''
 $gpu = ($gpu -replace '\s+', ' ').Trim()
 
-$ip=@();$mac=@();$gw=@()
-foreach($n in @(Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=True')){
-    $u=(Safe $n.Description).ToUpperInvariant()
-    if($u -match 'VIRTUALBOX|VMWARE|HYPER-V|VIRTUAL ETHERNET|TAP|TUN|LOOPBACK|CONTAINER|WSL|VPN'){continue}
-    foreach($x in @($n.IPAddress)){if($x -match '^\d{1,3}(\.\d{1,3}){3}$' -and $x -notmatch '^169\.254\.'){ $ip+=$x }}
-    if($n.MACAddress){$mac+=$n.MACAddress}
-    foreach($x in @($n.DefaultIPGateway)){if($x -match '^\d{1,3}(\.\d{1,3}){3}$'){$gw+=$x}}
-}
-#$ipAddress=if($ip.Count){($ip|Select-Object -Unique)-join ', '}else{'-'}
-$macAddress=if($mac.Count){($mac|Select-Object -Unique)-join ', '}else{'-'}
-#$gateway=if($gw.Count){($gw|Select-Object -Unique)-join ', '}else{'-'}
 $operatingSystem=Safe $os.Caption
 
 Write-Host ''
@@ -142,9 +131,6 @@ Write-Host "Thread        : $thread"
 Write-Host "RAM           : $ram"
 Write-Host "Storage       : $storage"
 Write-Host "GPU           : $gpu"
-#Write-Host "IP Address    : $ipAddress"
-Write-Host "MAC Address   : $macAddress"
-#Write-Host "Gateway       : $gateway"
 Write-Host "Operating Sys : $operatingSystem"
 Write-Host ''
 
@@ -154,7 +140,7 @@ if([string]::IsNullOrWhiteSpace($userName)){$userName='-'}else{$userName=$userNa
 $data=[ordered]@{
  computerName=$computerName; manufacturer=$manufacturer; model=$model; assetSerialID=$assetSerialID
  cpu=$cpu; core="$core"; thread="$thread"; ram=$ram; storage=$storage; gpu=$gpu
- macAddress=$macAddress; operatingSystem=$operatingSystem
+ operatingSystem=$operatingSystem
  userName=$userName
 }
 
