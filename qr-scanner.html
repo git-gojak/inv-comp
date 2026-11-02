@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -7,158 +8,408 @@
   <title>Go-jak QR Scanner</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    :root { color-scheme: dark; --bg:#101827; --panel:#1b2738; --muted:#aab7c8; --accent:#39a0ed; }
+    :root {
+      color-scheme: dark;
+      --bg:#101827;
+      --panel:#1b2738;
+      --muted:#aab7c8;
+      --accent:#39a0ed;
+    }
+
     * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; background:var(--bg); color:#f5f7fb; font-family:Arial,Helvetica,sans-serif; }
-    .wrap { width:min(100%,760px); margin:auto; padding:20px 16px 32px; }
-    header { text-align:center; padding:10px 0 18px; }
-    h1 { margin:0 0 7px; font-size:25px; }
-    .sub { color:var(--muted); font-size:14px; line-height:1.5; }
-    .panel { background:var(--panel); border:1px solid #344256; border-radius:16px; padding:16px; margin:12px 0; }
-    label { display:block; font-size:13px; color:#c8d3e1; margin:0 0 7px; }
-    input { width:100%; border:1px solid #53647b; border-radius:10px; padding:12px; background:#0f1928; color:white; font-size:14px; }
-    .hint { color:var(--muted); font-size:12px; line-height:1.5; margin-top:7px; }
-    #reader { width:100%; overflow:hidden; border-radius:12px; background:#080d15; }
-    #reader video { border-radius:12px; object-fit:cover; }
-    .buttons { display:flex; gap:10px; margin-top:14px; }
-    button { flex:1; border:0; border-radius:11px; padding:13px 10px; color:white; font-size:15px; font-weight:700; cursor:pointer; background:var(--accent); }
+
+    body {
+      margin:0;
+      min-height:100vh;
+      background:var(--bg);
+      color:#f5f7fb;
+      font-family:Arial,Helvetica,sans-serif;
+    }
+
+    .wrap {
+      width:min(100%,760px);
+      margin:auto;
+      padding:20px 16px 32px;
+    }
+
+    header {
+      text-align:center;
+      padding:10px 0 18px;
+    }
+
+    h1 {
+      margin:0 0 7px;
+      font-size:25px;
+    }
+
+    .sub {
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+    }
+
+    .panel {
+      background:var(--panel);
+      border:1px solid #344256;
+      border-radius:16px;
+      padding:16px;
+      margin:12px 0;
+    }
+
+    label {
+      display:block;
+      font-size:13px;
+      color:#c8d3e1;
+      margin:0 0 7px;
+    }
+
+    input {
+      width:100%;
+      border:1px solid #53647b;
+      border-radius:10px;
+      padding:12px;
+      background:#0f1928;
+      color:white;
+      font-size:14px;
+    }
+
+    .hint {
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+      margin-top:7px;
+    }
+
+    #reader {
+      width:100%;
+      overflow:hidden;
+      border-radius:12px;
+      background:#080d15;
+    }
+
+    #reader video {
+      border-radius:12px;
+      object-fit:cover;
+    }
+
+    .buttons {
+      display:flex;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    button {
+      flex:1;
+      border:0;
+      border-radius:11px;
+      padding:13px 10px;
+      color:white;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      background:var(--accent);
+    }
+
     button.secondary { background:#46566d; }
-    button:disabled { opacity:.45; cursor:not-allowed; }
-    #status { margin-top:12px; min-height:22px; font-size:14px; color:#d6e2f0; text-align:center; }
-    #result { overflow-wrap:anywhere; color:#8ed0ff; font-size:13px; margin-top:8px; text-align:center; }
-    .foot { text-align:center; color:#8292a8; font-size:11px; margin-top:18px; }
-    @media (max-width:480px) { .wrap{padding:14px 12px 24px} h1{font-size:22px} .panel{padding:12px} }
+
+    button:disabled {
+      opacity:.45;
+      cursor:not-allowed;
+    }
+
+    #status {
+      margin-top:12px;
+      min-height:22px;
+      font-size:14px;
+      color:#d6e2f0;
+      text-align:center;
+    }
+
+    #result {
+      overflow-wrap:anywhere;
+      color:#8ed0ff;
+      font-size:13px;
+      margin-top:8px;
+      text-align:center;
+    }
+
+    .foot {
+      text-align:center;
+      color:#8292a8;
+      font-size:11px;
+      margin-top:18px;
+    }
+
+    @media (max-width:480px) {
+      .wrap { padding:14px 12px 24px; }
+      h1 { font-size:22px; }
+      .panel { padding:12px; }
+    }
   </style>
 </head>
+
 <body>
   <main class="wrap">
     <header>
       <h1>Go-jak QR Scanner</h1>
-      <div class="sub">Pindai QR perangkat untuk membuka informasi komputer atau printer.</div>
+      <div class="sub">
+        Pindai QR perangkat untuk membuka informasi komputer atau printer.
+      </div>
     </header>
 
-    <section class="panel">
+    <section class="panel" id="urlPanel">
       <label for="webAppUrl">URL Web App Google Apps Script</label>
-      <input id="webAppUrl" type="url" placeholder="https://script.google.com/macros/s/....../exec">
-      <div class="hint">Masukkan URL deployment Web App Apps Script yang digunakan untuk halaman QR Info. URL ini disimpan di browser perangkat ini.</div>
+      <input
+        id="webAppUrl"
+        type="url"
+        placeholder="https://script.google.com/macros/s/....../exec"
+      >
+      <div class="hint">
+        Masukkan URL deployment Web App Apps Script yang digunakan
+        untuk halaman QR Info. URL ini disimpan di browser perangkat ini.
+      </div>
     </section>
 
     <section class="panel">
       <div id="reader"></div>
+
       <div class="buttons">
         <button id="startBtn" type="button">Mulai Scan</button>
-        <button id="stopBtn" class="secondary" type="button" disabled>Hentikan</button>
+        <button id="stopBtn" class="secondary" type="button" disabled>
+          Hentikan
+        </button>
       </div>
-      <div id="status" role="status">Siap. Masukkan URL Web App, lalu tekan Mulai Scan.</div>
+
+      <div id="status" role="status">
+        Siap. Masukkan URL Web App, lalu tekan Mulai Scan.
+      </div>
+
       <div id="result"></div>
     </section>
+
     <div class="foot">Go-jak IT Inventory</div>
   </main>
 
   <script>
     const urlInput = document.getElementById('webAppUrl');
+    const urlPanel = document.getElementById('urlPanel');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusEl = document.getElementById('status');
     const resultEl = document.getElementById('result');
+
     let scanner = null;
     let running = false;
     let handlingScan = false;
 
+    // Mode Maintenance: menerima returnUrl dari tab Maintenance.
+    const params = new URLSearchParams(window.location.search);
+    const returnUrlText = params.get('returnUrl');
+
+    let maintenanceReturnUrl = null;
+
+    if (returnUrlText) {
+      try {
+        const parsedReturnUrl = new URL(returnUrlText);
+
+        const allowedHosts = [
+          'script.google.com',
+          'script.googleusercontent.com'
+        ];
+
+        if (
+          parsedReturnUrl.protocol === 'https:' &&
+          allowedHosts.includes(parsedReturnUrl.hostname)
+        ) {
+          maintenanceReturnUrl = parsedReturnUrl;
+        }
+      } catch (_) {
+        maintenanceReturnUrl = null;
+      }
+    }
+
+    // URL QR Info yang pernah disimpan di browser.
     urlInput.value = localStorage.getItem('gojakQrWebAppUrl') || '';
 
-    function setStatus(message) { statusEl.textContent = message; }
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    // Jika dibuka dari Maintenance, URL QR Info tidak wajib diisi.
+    if (maintenanceReturnUrl && window.opener) {
+      urlPanel.style.display = 'none';
+      setStatus('Mode Maintenance aktif. Tekan Mulai Scan untuk membaca QR perangkat.');
+    }
 
     function buildInfoUrl(rawValue) {
       const base = urlInput.value.trim();
-      if (!base) throw new Error('URL Web App Apps Script belum diisi.');
+
+      if (!base) {
+        throw new Error('URL Web App Apps Script belum diisi.');
+      }
+
       let parsed;
-      try { parsed = new URL(base); } catch (_) { throw new Error('Format URL Web App tidak valid.'); }
 
-if (parsed.hostname !== 'script.google.com' || !/\/macros\/(?:[^/]+\/)?s\/[^/]+\/exec$/.test(parsed.pathname)
-) { throw new Error('Gunakan URL deployment Web App Google Apps Script.');
-}
+      try {
+        parsed = new URL(base);
+      } catch (_) {
+        throw new Error('Format URL Web App tidak valid.');
+      }
 
-      
+      if (
+        parsed.hostname !== 'script.google.com' ||
+        !/\/macros\/(?:[^/]+\/)?s\/[^/]+\/exec$/.test(parsed.pathname)
+      ) {
+        throw new Error('Gunakan URL deployment Web App Google Apps Script.');
+      }
+
       parsed.searchParams.set('page', 'qr');
       parsed.searchParams.set('id', rawValue.trim());
+
       return parsed.toString();
     }
 
     async function startScan() {
       if (running) return;
+
       if (!window.Html5Qrcode) {
         setStatus('Library scanner gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');
         return;
       }
-      if (!urlInput.value.trim()) {
+
+      // URL hanya diwajibkan jika scanner dibuka langsung untuk QR Info.
+      if (!maintenanceReturnUrl && !urlInput.value.trim()) {
         setStatus('Isi URL Web App Apps Script terlebih dahulu.');
         urlInput.focus();
         return;
       }
+
       try {
-        localStorage.setItem('gojakQrWebAppUrl', urlInput.value.trim());
+        if (urlInput.value.trim()) {
+          localStorage.setItem(
+            'gojakQrWebAppUrl',
+            urlInput.value.trim()
+          );
+        }
+
         scanner = new Html5Qrcode('reader');
+
         setStatus('Meminta izin kamera...');
+
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 12, qrbox: (w, h) => {
+          {
+            fps: 12,
+            qrbox: (w, h) => {
               const side = Math.floor(Math.min(w, h) * 0.78);
               return { width: side, height: side };
-            }, aspectRatio: 1.0 },
+            },
+            aspectRatio: 1.0
+          },
           onScanSuccess,
           () => {}
         );
+
         running = true;
         handlingScan = false;
+
         startBtn.disabled = true;
         stopBtn.disabled = false;
         urlInput.disabled = true;
+
         setStatus('Kamera aktif. Arahkan QR perangkat ke dalam kotak.');
+
       } catch (err) {
-        setStatus('Kamera tidak dapat dibuka: ' + (err && err.message ? err.message : err));
+        setStatus(
+          'Kamera tidak dapat dibuka: ' +
+          (err && err.message ? err.message : err)
+        );
+
         scanner = null;
       }
     }
 
     async function stopScan() {
       if (!scanner || !running) return;
+
       try {
         await scanner.stop();
         await scanner.clear();
       } catch (_) {}
+
       scanner = null;
       running = false;
+
       startBtn.disabled = false;
       stopBtn.disabled = true;
       urlInput.disabled = false;
+
       setStatus('Scanner dihentikan.');
     }
 
     async function onScanSuccess(decodedText) {
       if (handlingScan) return;
+
       handlingScan = true;
+
       const qrText = String(decodedText || '').trim();
+
       if (!qrText) {
         handlingScan = false;
         return;
       }
+
       try {
-        const destination = buildInfoUrl(qrText);
-        resultEl.textContent = 'QR terbaca: ' + qrText + ' — membuka informasi perangkat...';
-        setStatus('Berhasil membaca QR.');
+        resultEl.textContent = 'QR terbaca: ' + qrText;
+
         await stopScan();
+
+        // MODE 1: Scanner dibuka dari halaman Maintenance.
+        if (
+          maintenanceReturnUrl &&
+          window.opener &&
+          !window.opener.closed
+        ) {
+          setStatus('QR berhasil dibaca. Mengirim kode ke Maintenance...');
+
+          window.opener.postMessage(
+            {
+              type: 'GOJAK_QR_RESULT',
+              code: qrText
+            },
+            maintenanceReturnUrl.origin
+          );
+
+          setStatus('Kode QR berhasil dikirim. Menutup scanner...');
+
+          window.close();
+
+          return;
+        }
+
+        // MODE 2: Scanner dibuka langsung untuk QR Info.
+        const destination = buildInfoUrl(qrText);
+
+        setStatus('Berhasil membaca QR. Membuka informasi perangkat...');
+
         window.location.href = destination;
+
       } catch (err) {
-        setStatus(err.message || 'Tidak dapat membuka informasi perangkat.');
+        setStatus(
+          err.message || 'Tidak dapat memproses hasil scan.'
+        );
+
         handlingScan = false;
       }
     }
 
     startBtn.addEventListener('click', startScan);
     stopBtn.addEventListener('click', stopScan);
+
     window.addEventListener('beforeunload', () => {
-      if (scanner && running) scanner.stop().catch(() => {});
+      if (scanner && running) {
+        scanner.stop().catch(() => {});
+      }
     });
   </script>
 </body>
