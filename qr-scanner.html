@@ -1,105 +1,162 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
-<title>Go-jak — Scanner QR Perangkat</title>
-<style>
-:root{color-scheme:dark;font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#e5edf8}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:#0b1220}
-body{min-height:100vh;min-height:100dvh;padding:0;display:flex;align-items:stretch;justify-content:center}
-main{width:100%;min-height:100vh;min-height:100dvh;background:#111c2e;border:0;border-radius:0;padding:clamp(18px,3vw,28px);padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;box-shadow:none}
-h1{font-size:clamp(22px,4vw,28px);margin:0 0 8px}p{color:#a9b8cc;line-height:1.5;font-size:15px;margin:8px 0}
-#reader{width:100%;overflow:hidden;border-radius:14px;margin:16px 0;background:#07101d;min-height:52vh;min-height:52dvh;flex:1;display:flex;align-items:center;justify-content:center}
-#reader video{width:100%!important;height:auto!important;max-height:70dvh;object-fit:cover;border-radius:12px}
-#reader canvas{max-width:100%;height:auto}
-#reader__dashboard{padding:10px!important;color:#e5edf8}
-#reader button{width:auto;margin:6px;padding:10px 14px}
-.status{font-size:14px;line-height:1.5;color:#a9b8cc;white-space:pre-wrap}.error{color:#fb7185}
-input{width:100%;padding:15px;border-radius:10px;border:1px solid #3b4d66;background:#07101d;color:#fff;font-size:16px;margin:8px 0 12px}
-button{width:100%;border:0;border-radius:10px;padding:15px 16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;background:#1684f8;color:white;min-height:50px}
-button.secondary{background:#1c2a40;border:1px solid #3b4d66;color:#e5edf8}
-.small{font-size:12px;color:#91a2b8;margin-top:14px}
-@media(min-width:768px){
- body{padding:24px;align-items:center}
- main{width:min(820px,100%);min-height:min(920px,calc(100dvh - 48px));border:1px solid #2a3a52;border-radius:18px;padding:26px;box-shadow:0 18px 50px #0006}
- #reader{min-height:420px;max-height:62dvh;flex:1}
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <title>Go-jak QR Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#101827; --panel:#1b2738; --muted:#aab7c8; --accent:#39a0ed; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:#f5f7fb; font-family:Arial,Helvetica,sans-serif; }
+    .wrap { width:min(100%,760px); margin:auto; padding:20px 16px 32px; }
+    header { text-align:center; padding:10px 0 18px; }
+    h1 { margin:0 0 7px; font-size:25px; }
+    .sub { color:var(--muted); font-size:14px; line-height:1.5; }
+    .panel { background:var(--panel); border:1px solid #344256; border-radius:16px; padding:16px; margin:12px 0; }
+    label { display:block; font-size:13px; color:#c8d3e1; margin:0 0 7px; }
+    input { width:100%; border:1px solid #53647b; border-radius:10px; padding:12px; background:#0f1928; color:white; font-size:14px; }
+    .hint { color:var(--muted); font-size:12px; line-height:1.5; margin-top:7px; }
+    #reader { width:100%; overflow:hidden; border-radius:12px; background:#080d15; }
+    #reader video { border-radius:12px; object-fit:cover; }
+    .buttons { display:flex; gap:10px; margin-top:14px; }
+    button { flex:1; border:0; border-radius:11px; padding:13px 10px; color:white; font-size:15px; font-weight:700; cursor:pointer; background:var(--accent); }
+    button.secondary { background:#46566d; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    #status { margin-top:12px; min-height:22px; font-size:14px; color:#d6e2f0; text-align:center; }
+    #result { overflow-wrap:anywhere; color:#8ed0ff; font-size:13px; margin-top:8px; text-align:center; }
+    .foot { text-align:center; color:#8292a8; font-size:11px; margin-top:18px; }
+    @media (max-width:480px) { .wrap{padding:14px 12px 24px} h1{font-size:22px} .panel{padding:12px} }
+  </style>
 </head>
 <body>
-<main>
-  <h1>SCAN QR PERANGKAT</h1>
-  <p>Arahkan kamera belakang HP ke QR komputer atau printer. Setelah terbaca, kode akan dikirim kembali ke halaman Maintenance.</p>
-  <div id="reader"></div>
-  <div id="status" class="status">Menyiapkan kamera…</div>
-  <div id="fallback" hidden>
-    <p>Jika kamera tidak dapat digunakan, masukkan kode QR secara manual:</p>
-    <input id="manualCode" autocomplete="off" placeholder="Asset/Serial ID atau sn_asset">
-    <button id="sendManual">Kirim kode ke Maintenance</button>
-  </div>
-  <button class="secondary" id="stopCamera" type="button">Matikan Kamera</button>
-  <p class="small">Halaman scanner berjalan terpisah dari Google Apps Script agar akses kamera HP tidak terhalang iframe.</p>
-</main>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script>
-const statusEl=document.getElementById('status');
-let scanner=null;
-let sent=false;
-const returnUrlParam=new URLSearchParams(window.location.search).get('returnUrl');
-function getReturnUrl(code){
-  if(!returnUrlParam)return null;
-  try{
-    const target=new URL(returnUrlParam);
-    if(!['script.google.com','script.googleusercontent.com'].includes(target.hostname))return null;
-    target.searchParams.set('qrCode',code);
-    return target.toString();
-  }catch(e){return null;}
-}
-function status(message,isError=false){statusEl.textContent=message;statusEl.className='status'+(isError?' error':'');}
-function sendCode(value){
-  const code=String(value||'').trim();
-  if(!code)return status('Kode QR kosong.',true);
-  if(sent)return;
-  sent=true;
-  status('QR terbaca. Mengirim kode ke halaman Maintenance…');
-  const returnUrl=getReturnUrl(code);
-  try{
-    if(window.opener&&!window.opener.closed){
-      window.opener.postMessage({type:'GOJAK_QR_RESULT',code},'*');
-      status('Kode terbaca. Mengembalikan hasil ke Maintenance…');
-      setTimeout(()=>{try{window.close();}catch(e){}},500);
-      if(returnUrl)setTimeout(()=>{if(!window.closed)window.location.replace(returnUrl);},1200);
-    }else if(returnUrl){
-      status('Kode terbaca. Membuka kembali Maintenance…');
-      window.location.replace(returnUrl);
-    }else{
-      document.getElementById('manualCode').value=code;
-      document.getElementById('fallback').hidden=false;
-      status('Kode terbaca, tetapi tautan kembali ke Maintenance tidak tersedia. Salin kode ini atau masukkan secara manual.',true);
-      document.getElementById('manualCode').focus();
-      sent=false;
+  <main class="wrap">
+    <header>
+      <h1>Go-jak QR Scanner</h1>
+      <div class="sub">Pindai QR perangkat untuk membuka informasi komputer atau printer.</div>
+    </header>
+
+    <section class="panel">
+      <label for="webAppUrl">URL Web App Google Apps Script</label>
+      <input id="webAppUrl" type="url" placeholder="https://script.google.com/macros/s/....../exec">
+      <div class="hint">Masukkan URL deployment Web App Apps Script yang digunakan untuk halaman QR Info. URL ini disimpan di browser perangkat ini.</div>
+    </section>
+
+    <section class="panel">
+      <div id="reader"></div>
+      <div class="buttons">
+        <button id="startBtn" type="button">Mulai Scan</button>
+        <button id="stopBtn" class="secondary" type="button" disabled>Hentikan</button>
+      </div>
+      <div id="status" role="status">Siap. Masukkan URL Web App, lalu tekan Mulai Scan.</div>
+      <div id="result"></div>
+    </section>
+    <div class="foot">Go-jak IT Inventory</div>
+  </main>
+
+  <script>
+    const urlInput = document.getElementById('webAppUrl');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    let scanner = null;
+    let running = false;
+    let handlingScan = false;
+
+    urlInput.value = localStorage.getItem('gojakQrWebAppUrl') || '';
+
+    function setStatus(message) { statusEl.textContent = message; }
+
+    function buildInfoUrl(rawValue) {
+      const base = urlInput.value.trim();
+      if (!base) throw new Error('URL Web App Apps Script belum diisi.');
+      let parsed;
+      try { parsed = new URL(base); } catch (_) { throw new Error('Format URL Web App tidak valid.'); }
+      if (!/script\.google\.com$/.test(parsed.hostname) || !parsed.pathname.includes('/macros/s/')) {
+        throw new Error('Gunakan URL deployment Web App Google Apps Script.');
+      }
+      parsed.searchParams.set('page', 'qr');
+      parsed.searchParams.set('id', rawValue.trim());
+      return parsed.toString();
     }
-  }catch(e){
-    if(returnUrl){window.location.replace(returnUrl);return;}
-    sent=false;status('Gagal mengirim kode: '+(e.message||e),true);
-  }
-}
-async function stopCamera(){if(scanner){try{await scanner.stop();}catch(e){}try{scanner.clear();}catch(e){}scanner=null;}status('Kamera dimatikan.');}
-async function startCamera(){
-  try{
-    if(!window.Html5Qrcode)throw new Error('Modul pemindai gagal dimuat. Periksa koneksi internet.');
-    scanner=new Html5Qrcode('reader');
-    await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},async text=>{await stopCamera();sendCode(text);},()=>{});
-    status('Kamera aktif. Arahkan QR ke dalam kotak pemindai.');
-  }catch(e){scanner=null;status('Kamera tidak dapat digunakan: '+(e.message||e)+'. Periksa izin kamera untuk situs GitHub Pages ini.',true);document.getElementById('fallback').hidden=false;}
-}
-document.getElementById('stopCamera').addEventListener('click',stopCamera);
-document.getElementById('sendManual').addEventListener('click',()=>sendCode(document.getElementById('manualCode').value));
-document.getElementById('manualCode').addEventListener('keydown',e=>{if(e.key==='Enter')sendCode(e.target.value);});
-startCamera();
-</script>
+
+    async function startScan() {
+      if (running) return;
+      if (!window.Html5Qrcode) {
+        setStatus('Library scanner gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');
+        return;
+      }
+      if (!urlInput.value.trim()) {
+        setStatus('Isi URL Web App Apps Script terlebih dahulu.');
+        urlInput.focus();
+        return;
+      }
+      try {
+        localStorage.setItem('gojakQrWebAppUrl', urlInput.value.trim());
+        scanner = new Html5Qrcode('reader');
+        setStatus('Meminta izin kamera...');
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 12, qrbox: (w, h) => {
+              const side = Math.floor(Math.min(w, h) * 0.78);
+              return { width: side, height: side };
+            }, aspectRatio: 1.0 },
+          onScanSuccess,
+          () => {}
+        );
+        running = true;
+        handlingScan = false;
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        urlInput.disabled = true;
+        setStatus('Kamera aktif. Arahkan QR perangkat ke dalam kotak.');
+      } catch (err) {
+        setStatus('Kamera tidak dapat dibuka: ' + (err && err.message ? err.message : err));
+        scanner = null;
+      }
+    }
+
+    async function stopScan() {
+      if (!scanner || !running) return;
+      try {
+        await scanner.stop();
+        await scanner.clear();
+      } catch (_) {}
+      scanner = null;
+      running = false;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      urlInput.disabled = false;
+      setStatus('Scanner dihentikan.');
+    }
+
+    async function onScanSuccess(decodedText) {
+      if (handlingScan) return;
+      handlingScan = true;
+      const qrText = String(decodedText || '').trim();
+      if (!qrText) {
+        handlingScan = false;
+        return;
+      }
+      try {
+        const destination = buildInfoUrl(qrText);
+        resultEl.textContent = 'QR terbaca: ' + qrText + ' — membuka informasi perangkat...';
+        setStatus('Berhasil membaca QR.');
+        await stopScan();
+        window.location.href = destination;
+      } catch (err) {
+        setStatus(err.message || 'Tidak dapat membuka informasi perangkat.');
+        handlingScan = false;
+      }
+    }
+
+    startBtn.addEventListener('click', startScan);
+    stopBtn.addEventListener('click', stopScan);
+    window.addEventListener('beforeunload', () => {
+      if (scanner && running) scanner.stop().catch(() => {});
+    });
+  </script>
 </body>
 </html>
