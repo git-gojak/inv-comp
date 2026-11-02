@@ -37,6 +37,16 @@ button.secondary{background:#1c2a40;border:1px solid #3b4d66;color:#e5edf8}
 const statusEl=document.getElementById('status');
 let scanner=null;
 let sent=false;
+const returnUrlParam=new URLSearchParams(window.location.search).get('returnUrl');
+function getReturnUrl(code){
+  if(!returnUrlParam)return null;
+  try{
+    const target=new URL(returnUrlParam);
+    if(!['script.google.com','script.googleusercontent.com'].includes(target.hostname))return null;
+    target.searchParams.set('qrCode',code);
+    return target.toString();
+  }catch(e){return null;}
+}
 function status(message,isError=false){statusEl.textContent=message;statusEl.className='status'+(isError?' error':'');}
 function sendCode(value){
   const code=String(value||'').trim();
@@ -44,18 +54,27 @@ function sendCode(value){
   if(sent)return;
   sent=true;
   status('QR terbaca. Mengirim kode ke halaman Maintenance…');
+  const returnUrl=getReturnUrl(code);
   try{
     if(window.opener&&!window.opener.closed){
       window.opener.postMessage({type:'GOJAK_QR_RESULT',code},'*');
-      setTimeout(()=>window.close(),500);
+      status('Kode terbaca. Mengembalikan hasil ke Maintenance…');
+      setTimeout(()=>{try{window.close();}catch(e){}},500);
+      if(returnUrl)setTimeout(()=>{if(!window.closed)window.location.replace(returnUrl);},1200);
+    }else if(returnUrl){
+      status('Kode terbaca. Membuka kembali Maintenance…');
+      window.location.replace(returnUrl);
     }else{
       document.getElementById('manualCode').value=code;
       document.getElementById('fallback').hidden=false;
-      status('Kode terbaca, tetapi halaman Maintenance tidak terhubung. Salin kode ini atau kembali ke tab Maintenance dan masukkan secara manual.',true);
+      status('Kode terbaca, tetapi tautan kembali ke Maintenance tidak tersedia. Salin kode ini atau masukkan secara manual.',true);
       document.getElementById('manualCode').focus();
       sent=false;
     }
-  }catch(e){sent=false;status('Gagal mengirim kode: '+(e.message||e),true);}
+  }catch(e){
+    if(returnUrl){window.location.replace(returnUrl);return;}
+    sent=false;status('Gagal mengirim kode: '+(e.message||e),true);
+  }
 }
 async function stopCamera(){if(scanner){try{await scanner.stop();}catch(e){}try{scanner.clear();}catch(e){}scanner=null;}status('Kamera dimatikan.');}
 async function startCamera(){
