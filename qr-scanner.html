@@ -74,9 +74,12 @@
       if (!base) throw new Error('URL Web App Apps Script belum diisi.');
       let parsed;
       try { parsed = new URL(base); } catch (_) { throw new Error('Format URL Web App tidak valid.'); }
-      if (!/script\.google\.com$/.test(parsed.hostname) || !parsed.pathname.includes('/macros/s/')) {
-        throw new Error('Gunakan URL deployment Web App Google Apps Script.');
-      }
+
+if (parsed.hostname !== 'script.google.com' || !/\/macros\/(?:[^/]+\/)?s\/[^/]+\/exec$/.test(parsed.pathname)
+) { throw new Error('Gunakan URL deployment Web App Google Apps Script.');
+}
+
+      
       parsed.searchParams.set('page', 'qr');
       parsed.searchParams.set('id', rawValue.trim());
       return parsed.toString();
