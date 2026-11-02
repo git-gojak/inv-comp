@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Go-jak — Scanner QR Perangkat</title>
+<style>
+:root{color-scheme:dark;font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#e5edf8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:20px;display:flex;align-items:center;justify-content:center}
+main{width:min(560px,100%);background:#111c2e;border:1px solid #2a3a52;border-radius:18px;padding:22px;box-shadow:0 18px 50px #0006}
+h1{font-size:22px;margin:0 0 8px}p{color:#a9b8cc;line-height:1.5;font-size:14px}
+#reader{width:100%;overflow:hidden;border-radius:12px;margin:18px 0;background:#07101d;min-height:120px}
+.status{font-size:14px;line-height:1.5;color:#a9b8cc;white-space:pre-wrap}.error{color:#fb7185}
+input{width:100%;padding:14px;border-radius:10px;border:1px solid #3b4d66;background:#07101d;color:#fff;font-size:16px;margin:8px 0 12px}
+button{width:100%;border:0;border-radius:10px;padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;background:#1684f8;color:white}
+button.secondary{background:#1c2a40;border:1px solid #3b4d66;color:#e5edf8}
+.small{font-size:12px;color:#91a2b8;margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>SCAN QR PERANGKAT</h1>
+  <p>Arahkan kamera belakang HP ke QR komputer atau printer. Setelah terbaca, kode akan dikirim kembali ke halaman Maintenance.</p>
+  <div id="reader"></div>
+  <div id="status" class="status">Menyiapkan kamera…</div>
+  <div id="fallback" hidden>
+    <p>Jika kamera tidak dapat digunakan, masukkan kode QR secara manual:</p>
+    <input id="manualCode" autocomplete="off" placeholder="Asset/Serial ID atau sn_asset">
+    <button id="sendManual">Kirim kode ke Maintenance</button>
+  </div>
+  <button class="secondary" id="stopCamera" type="button">Matikan Kamera</button>
+  <p class="small">Halaman scanner berjalan terpisah dari Google Apps Script agar akses kamera HP tidak terhalang iframe.</p>
+</main>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const statusEl=document.getElementById('status');
+let scanner=null;
+let sent=false;
+function status(message,isError=false){statusEl.textContent=message;statusEl.className='status'+(isError?' error':'');}
+function sendCode(value){
+  const code=String(value||'').trim();
+  if(!code)return status('Kode QR kosong.',true);
+  if(sent)return;
+  sent=true;
+  status('QR terbaca. Mengirim kode ke halaman Maintenance…');
+  try{
+    if(window.opener&&!window.opener.closed){
+      window.opener.postMessage({type:'GOJAK_QR_RESULT',code},'*');
+      setTimeout(()=>window.close(),500);
+    }else{
+      document.getElementById('manualCode').value=code;
+      document.getElementById('fallback').hidden=false;
+      status('Kode terbaca, tetapi halaman Maintenance tidak terhubung. Salin kode ini atau kembali ke tab Maintenance dan masukkan secara manual.',true);
+      document.getElementById('manualCode').focus();
+      sent=false;
+    }
+  }catch(e){sent=false;status('Gagal mengirim kode: '+(e.message||e),true);}
+}
+async function stopCamera(){if(scanner){try{await scanner.stop();}catch(e){}try{scanner.clear();}catch(e){}scanner=null;}status('Kamera dimatikan.');}
+async function startCamera(){
+  try{
+    if(!window.Html5Qrcode)throw new Error('Modul pemindai gagal dimuat. Periksa koneksi internet.');
+    scanner=new Html5Qrcode('reader');
+    await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},async text=>{await stopCamera();sendCode(text);},()=>{});
+    status('Kamera aktif. Arahkan QR ke dalam kotak pemindai.');
+  }catch(e){scanner=null;status('Kamera tidak dapat digunakan: '+(e.message||e)+'. Periksa izin kamera untuk situs GitHub Pages ini.',true);document.getElementById('fallback').hidden=false;}
+}
+document.getElementById('stopCamera').addEventListener('click',stopCamera);
+document.getElementById('sendManual').addEventListener('click',()=>sendCode(document.getElementById('manualCode').value));
+document.getElementById('manualCode').addEventListener('keydown',e=>{if(e.key==='Enter')sendCode(e.target.value);});
+startCamera();
+</script>
+</body>
+</html>
