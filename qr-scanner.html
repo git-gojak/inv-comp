@@ -7,15 +7,26 @@
 <title>Go-jak — Scanner QR Perangkat</title>
 <style>
 :root{color-scheme:dark;font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#e5edf8}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:20px;display:flex;align-items:center;justify-content:center}
-main{width:min(560px,100%);background:#111c2e;border:1px solid #2a3a52;border-radius:18px;padding:22px;box-shadow:0 18px 50px #0006}
-h1{font-size:22px;margin:0 0 8px}p{color:#a9b8cc;line-height:1.5;font-size:14px}
-#reader{width:100%;overflow:hidden;border-radius:12px;margin:18px 0;background:#07101d;min-height:120px}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#0b1220}
+body{min-height:100vh;min-height:100dvh;padding:0;display:flex;align-items:stretch;justify-content:center}
+main{width:100%;min-height:100vh;min-height:100dvh;background:#111c2e;border:0;border-radius:0;padding:clamp(18px,3vw,28px);padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;box-shadow:none}
+h1{font-size:clamp(22px,4vw,28px);margin:0 0 8px}p{color:#a9b8cc;line-height:1.5;font-size:15px;margin:8px 0}
+#reader{width:100%;overflow:hidden;border-radius:14px;margin:16px 0;background:#07101d;min-height:52vh;min-height:52dvh;flex:1;display:flex;align-items:center;justify-content:center}
+#reader video{width:100%!important;height:auto!important;max-height:70dvh;object-fit:cover;border-radius:12px}
+#reader canvas{max-width:100%;height:auto}
+#reader__dashboard{padding:10px!important;color:#e5edf8}
+#reader button{width:auto;margin:6px;padding:10px 14px}
 .status{font-size:14px;line-height:1.5;color:#a9b8cc;white-space:pre-wrap}.error{color:#fb7185}
-input{width:100%;padding:14px;border-radius:10px;border:1px solid #3b4d66;background:#07101d;color:#fff;font-size:16px;margin:8px 0 12px}
-button{width:100%;border:0;border-radius:10px;padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;background:#1684f8;color:white}
+input{width:100%;padding:15px;border-radius:10px;border:1px solid #3b4d66;background:#07101d;color:#fff;font-size:16px;margin:8px 0 12px}
+button{width:100%;border:0;border-radius:10px;padding:15px 16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;background:#1684f8;color:white;min-height:50px}
 button.secondary{background:#1c2a40;border:1px solid #3b4d66;color:#e5edf8}
 .small{font-size:12px;color:#91a2b8;margin-top:14px}
+@media(min-width:768px){
+ body{padding:24px;align-items:center}
+ main{width:min(820px,100%);min-height:min(920px,calc(100dvh - 48px));border:1px solid #2a3a52;border-radius:18px;padding:26px;box-shadow:0 18px 50px #0006}
+ #reader{min-height:420px;max-height:62dvh;flex:1}
+}
 </style>
 </head>
 <body>
