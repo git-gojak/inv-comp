@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go-jak IT — QR Info Scanner</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#edf4ff;font:15px Arial,sans-serif;padding:18px}
+main{max-width:560px;margin:auto}.brand{font-size:12px;letter-spacing:1.3px;color:#9aabc2;font-weight:bold}
+h1{font-size:23px;margin:9px 0}.hint{color:#9aabc2;line-height:1.5}
+.panel{background:#142033;border:1px solid #29384e;border-radius:15px;padding:15px;margin-top:16px}
+#reader{width:100%;overflow:hidden;border-radius:10px}button{border:0;border-radius:9px;padding:12px 15px;font-weight:bold;cursor:pointer;background:#2563eb;color:white}
+button.secondary{background:#334155}input{width:100%;padding:12px;border-radius:9px;border:1px solid #475569;background:#0b1220;color:white;margin:9px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap}.status{color:#a8b8cc;font-size:13px;margin-top:10px;line-height:1.5}
+a{color:#93c5fd}.foot{font-size:11px;color:#71839d;text-align:center;margin:20px}
+</style></head>
+<body><main>
+<div class="brand">GO-JAK IT INVENTORY</div><h1>QR Scan — Informasi Perangkat</h1>
+<p class="hint">Pindai QR komputer atau printer untuk melihat informasi inventaris. Scanner ini tidak membuka atau mengubah halaman Maintenance.</p>
+<section class="panel"><div id="reader"></div><div class="row" style="margin-top:12px"><button id="startBtn">Mulai Kamera</button><button id="stopBtn" class="secondary">Matikan Kamera</button></div><div id="status" class="status">Izinkan akses kamera untuk mulai memindai.</div></section>
+<section class="panel"><strong>Masukkan kode QR secara manual</strong><input id="manualCode" placeholder="Contoh: FCGBZR3" autocomplete="off"><button id="openBtn">Tampilkan Data</button></section>
+<div class="foot">Read-only · DB-Main dan DB-Printer</div>
+</main>
+<script>
+const INFO_WEB_APP_URL='GANTI_DENGAN_URL_WEB_APP_APPS_SCRIPT';
+let scanner=null,locked=false;
+const statusEl=document.getElementById('status');
+function codeFromText(text){
+  const value=String(text||'').trim();
+  try{
+    const u=new URL(value);
+    return u.searchParams.get('qrCode')||u.searchParams.get('id')||value;
+  }catch(e){return value;}
+}
+function showInfo(raw){
+  const code=codeFromText(raw);
+  if(!code){statusEl.textContent='Kode QR kosong.';return;}
+  if(INFO_WEB_APP_URL.includes('GANTI_DENGAN')){statusEl.textContent='URL Web App QR Info belum diatur pada file scanner.';return;}
+  const target=new URL(INFO_WEB_APP_URL);
+  target.searchParams.set('page','qrinfo');
+  target.searchParams.set('qrCode',code);
+  window.location.href=target.toString();
+}
+document.getElementById('openBtn').addEventListener('click',()=>showInfo(document.getElementById('manualCode').value));
+document.getElementById('manualCode').addEventListener('keydown',e=>{if(e.key==='Enter')showInfo(e.target.value);});
+document.getElementById('startBtn').addEventListener('click',async()=>{
+  if(!window.Html5Qrcode){statusEl.textContent='Library scanner gagal dimuat. Periksa koneksi internet.';return;}
+  try{
+    if(!scanner)scanner=new Html5Qrcode('reader');
+    locked=false;statusEl.textContent='Meminta izin kamera…';
+    const cameras=await Html5Qrcode.getCameras();
+    if(!cameras.length)throw new Error('Kamera tidak ditemukan.');
+    const back=cameras.find(c=>/back|rear|environment/i.test(c.label));
+    await scanner.start(back?back.id:{facingMode:'environment'},{fps:10,qrbox:{width:240,height:240}},decoded=>{
+      if(locked)return;locked=true;statusEl.textContent='QR terbaca. Membuka informasi perangkat…';
+      scanner.stop().catch(()=>{});showInfo(decoded);
+    },()=>{});
+    statusEl.textContent='Arahkan kamera ke QR komputer atau printer.';
+  }catch(err){statusEl.textContent='Kamera tidak dapat dibuka: '+(err.message||err);}
+});
+document.getElementById('stopBtn').addEventListener('click',async()=>{
+  if(scanner){try{if(scanner.isScanning)await scanner.stop();statusEl.textContent='Kamera dimatikan.';}catch(e){statusEl.textContent='Kamera sudah berhenti.';}}
+});
+</script></body></html>
