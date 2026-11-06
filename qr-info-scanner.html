@@ -35,7 +35,7 @@ function codeFromText(text){
 function showInfo(raw){
   const code=codeFromText(raw);
   if(!code){statusEl.textContent='Kode QR kosong.';return;}
-  if(INFO_WEB_APP_URL.includes('GANTI_DENGAN')){statusEl.textContent='URL Web App QR Info belum diatur pada file scanner.';return;}
+  if(INFO_WEB_APP_URL.includes('https://script.google.com/a/macros/yudharta.ac.id/s/AKfycbzxvZKq4moQzGLYFKH0zCujRFt-iqrUuL_QxLe5OxALeLdI_i4yllDIfJUELC7t9DI/exec')){statusEl.textContent='URL Web App QR Info belum diatur pada file scanner.';return;}
   const target=new URL(INFO_WEB_APP_URL);
   target.searchParams.set('page','qrinfo');
   target.searchParams.set('qrCode',code);
