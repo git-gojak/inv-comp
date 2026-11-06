@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#101827">
   <title>Go-jak QR Scanner</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
   <style>
     :root {
       color-scheme: dark;
@@ -54,30 +55,6 @@
       border-radius:16px;
       padding:16px;
       margin:12px 0;
-    }
-
-    label {
-      display:block;
-      font-size:13px;
-      color:#c8d3e1;
-      margin:0 0 7px;
-    }
-
-    input {
-      width:100%;
-      border:1px solid #53647b;
-      border-radius:10px;
-      padding:12px;
-      background:#0f1928;
-      color:white;
-      font-size:14px;
-    }
-
-    .hint {
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.5;
-      margin-top:7px;
     }
 
     #reader {
@@ -157,19 +134,6 @@
       </div>
     </header>
 
-    <section class="panel" id="urlPanel">
-      <label for="webAppUrl">URL Web App Google Apps Script</label>
-      <input
-        id="webAppUrl"
-        type="url"
-        placeholder="https://script.google.com/macros/s/....../exec"
-      >
-      <div class="hint">
-        Masukkan URL deployment Web App Apps Script yang digunakan
-        untuk halaman QR Info. URL ini disimpan di browser perangkat ini.
-      </div>
-    </section>
-
     <section class="panel">
       <div id="reader"></div>
 
@@ -181,7 +145,7 @@
       </div>
 
       <div id="status" role="status">
-        Siap. Masukkan URL Web App, lalu tekan Mulai Scan.
+        Menyiapkan scanner...
       </div>
 
       <div id="result"></div>
@@ -191,8 +155,6 @@
   </main>
 
   <script>
-    const urlInput = document.getElementById('webAppUrl');
-    const urlPanel = document.getElementById('urlPanel');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusEl = document.getElementById('status');
@@ -202,96 +164,128 @@
     let running = false;
     let handlingScan = false;
 
-    // Mode Maintenance: menerima returnUrl dari tab Maintenance.
+    // Parameter yang dikirim otomatis dari halaman Maintenance.
     const params = new URLSearchParams(window.location.search);
-    const returnUrlText = params.get('returnUrl');
 
+    const webAppUrlText = params.get('webAppUrl') || '';
+    const returnUrlText = params.get('returnUrl') || '';
+
+    let webAppUrl = null;
     let maintenanceReturnUrl = null;
 
-    if (returnUrlText) {
-      try {
-        const parsedReturnUrl = new URL(returnUrlText);
+    function setStatus(message) {
+      statusEl.textContent = message;
+    }
 
-        const allowedHosts = [
-          'script.google.com',
-          'script.googleusercontent.com'
-        ];
+    // Validasi URL deployment Web App.
+    function validateWebAppUrl(value) {
+      if (!value) return null;
+
+      try {
+        const parsed = new URL(value);
 
         if (
-          parsedReturnUrl.protocol === 'https:' &&
-          allowedHosts.includes(parsedReturnUrl.hostname)
+          parsed.protocol !== 'https:' ||
+          parsed.hostname !== 'script.google.com' ||
+          !/^\/macros\/s\/[^/]+\/exec$/.test(parsed.pathname)
         ) {
-          maintenanceReturnUrl = parsedReturnUrl;
+          return null;
+        }
+
+        return parsed;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    // URL QR Info dikirim dari Maintenance.
+    webAppUrl = validateWebAppUrl(webAppUrlText);
+
+    // Fallback untuk scanner yang dibuka langsung:
+    // gunakan URL yang pernah tersimpan sebelumnya.
+    if (!webAppUrl) {
+      webAppUrl = validateWebAppUrl(
+        localStorage.getItem('gojakQrWebAppUrl') || ''
+      );
+    }
+
+    // Validasi alamat kembali ke Maintenance.
+    if (returnUrlText) {
+      try {
+        const parsed = new URL(returnUrlText);
+
+        if (
+          parsed.protocol === 'https:' &&
+          parsed.hostname === 'script.google.com' &&
+          /^\/macros\/s\/[^/]+\/exec$/.test(parsed.pathname)
+        ) {
+          maintenanceReturnUrl = parsed;
         }
       } catch (_) {
         maintenanceReturnUrl = null;
       }
     }
 
-    // URL QR Info yang pernah disimpan di browser.
-    urlInput.value = localStorage.getItem('gojakQrWebAppUrl') || '';
-
-    function setStatus(message) {
-      statusEl.textContent = message;
-    }
-
-    // Jika dibuka dari Maintenance, URL QR Info tidak wajib diisi.
-    if (maintenanceReturnUrl && window.opener) {
-      urlPanel.style.display = 'none';
-      setStatus('Mode Maintenance aktif. Tekan Mulai Scan untuk membaca QR perangkat.');
+    // Simpan URL deployment yang diterima secara otomatis.
+    if (webAppUrl) {
+      localStorage.setItem(
+        'gojakQrWebAppUrl',
+        webAppUrl.toString()
+      );
     }
 
     function buildInfoUrl(rawValue) {
-      const base = urlInput.value.trim();
-
-      if (!base) {
-        throw new Error('URL Web App Apps Script belum diisi.');
+      if (!webAppUrl) {
+        throw new Error(
+          'URL aplikasi tidak tersedia. Buka scanner melalui halaman Maintenance.'
+        );
       }
 
-      let parsed;
+      const destination = new URL(webAppUrl.toString());
 
-      try {
-        parsed = new URL(base);
-      } catch (_) {
-        throw new Error('Format URL Web App tidak valid.');
-      }
+      destination.searchParams.set('page', 'qr');
+      destination.searchParams.set('id', rawValue.trim());
 
-      if (
-        parsed.hostname !== 'script.google.com' ||
-        !/\/macros\/(?:[^/]+\/)?s\/[^/]+\/exec$/.test(parsed.pathname)
-      ) {
-        throw new Error('Gunakan URL deployment Web App Google Apps Script.');
-      }
+      return destination.toString();
+    }
 
-      parsed.searchParams.set('page', 'qr');
-      parsed.searchParams.set('id', rawValue.trim());
-
-      return parsed.toString();
+    // Status awal.
+    if (
+      maintenanceReturnUrl &&
+      window.opener &&
+      !window.opener.closed
+    ) {
+      setStatus(
+        'Mode Maintenance aktif. Tekan Mulai Scan untuk membaca QR perangkat.'
+      );
+    } else if (webAppUrl) {
+      setStatus(
+        'Siap. Tekan Mulai Scan untuk membaca QR perangkat.'
+      );
+    } else {
+      setStatus(
+        'URL aplikasi belum tersedia. Silakan buka scanner dari halaman Maintenance.'
+      );
     }
 
     async function startScan() {
       if (running) return;
 
       if (!window.Html5Qrcode) {
-        setStatus('Library scanner gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');
+        setStatus(
+          'Library scanner gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.'
+        );
         return;
       }
 
-      // URL hanya diwajibkan jika scanner dibuka langsung untuk QR Info.
-      if (!maintenanceReturnUrl && !urlInput.value.trim()) {
-        setStatus('Isi URL Web App Apps Script terlebih dahulu.');
-        urlInput.focus();
+      if (!webAppUrl) {
+        setStatus(
+          'URL aplikasi tidak tersedia. Buka scanner melalui halaman Maintenance.'
+        );
         return;
       }
 
       try {
-        if (urlInput.value.trim()) {
-          localStorage.setItem(
-            'gojakQrWebAppUrl',
-            urlInput.value.trim()
-          );
-        }
-
         scanner = new Html5Qrcode('reader');
 
         setStatus('Meminta izin kamera...');
@@ -315,9 +309,10 @@
 
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        urlInput.disabled = true;
 
-        setStatus('Kamera aktif. Arahkan QR perangkat ke dalam kotak.');
+        setStatus(
+          'Kamera aktif. Arahkan QR perangkat ke dalam kotak.'
+        );
 
       } catch (err) {
         setStatus(
@@ -342,7 +337,6 @@
 
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      urlInput.disabled = false;
 
       setStatus('Scanner dihentikan.');
     }
@@ -365,12 +359,15 @@
         await stopScan();
 
         // MODE 1: Scanner dibuka dari halaman Maintenance.
+        // Kirim kode QR kembali ke tab Maintenance.
         if (
           maintenanceReturnUrl &&
           window.opener &&
           !window.opener.closed
         ) {
-          setStatus('QR berhasil dibaca. Mengirim kode ke Maintenance...');
+          setStatus(
+            'QR berhasil dibaca. Mengirim kode ke Maintenance...'
+          );
 
           window.opener.postMessage(
             {
@@ -380,17 +377,22 @@
             maintenanceReturnUrl.origin
           );
 
-          setStatus('Kode QR berhasil dikirim. Menutup scanner...');
+          setStatus(
+            'Kode QR berhasil dikirim. Menutup scanner...'
+          );
 
           window.close();
 
           return;
         }
 
-        // MODE 2: Scanner dibuka langsung untuk QR Info.
+        // MODE 2: Scanner dibuka langsung.
+        // Buka halaman QR Info komputer atau printer.
         const destination = buildInfoUrl(qrText);
 
-        setStatus('Berhasil membaca QR. Membuka informasi perangkat...');
+        setStatus(
+          'Berhasil membaca QR. Membuka informasi perangkat...'
+        );
 
         window.location.href = destination;
 
