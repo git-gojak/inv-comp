@@ -49,10 +49,10 @@ const statusEl=document.getElementById('status');
 let scanner=null;
 let sent=false;
 const returnUrlParam=new URLSearchParams(window.location.search).get('returnUrl');
+const DEFAULT_RETURN_URL='https://script.google.com/a/macros/yudharta.ac.id/s/AKfycbzxvZKq4moQzGLYFKH0zCujRFt-iqrUuL_QxLe5OxALeLdI_i4yllDIfJUELC7t9DI/exec?page=maintenance';
 function getReturnUrl(code){
-  if(!returnUrlParam)return null;
   try{
-    const target=new URL(returnUrlParam);
+    const target=new URL(returnUrlParam || DEFAULT_RETURN_URL);
     if(!['script.google.com','script.googleusercontent.com'].includes(target.hostname))return null;
     target.searchParams.set('qrCode',code);
     return target.toString();
@@ -67,11 +67,13 @@ function sendCode(value){
   status('QR terbaca. Mengirim kode ke halaman Maintenance…');
   const returnUrl=getReturnUrl(code);
   try{
-    if(window.opener&&!window.opener.closed){
+    // postMessage hanya untuk scanner yang memang dibuka dari Maintenance.
+    // Jika URL GitHub dibuka langsung, arahkan kembali ke Maintenance bawaan.
+    if(returnUrlParam && window.opener && !window.opener.closed){
       window.opener.postMessage({type:'GOJAK_QR_RESULT',code},'*');
       status('Kode terbaca. Mengembalikan hasil ke Maintenance…');
       setTimeout(()=>{try{window.close();}catch(e){}},500);
-      if(returnUrl)setTimeout(()=>{if(!window.closed)window.location.replace(returnUrl);},1200);
+      setTimeout(()=>{if(!window.closed)window.location.replace(returnUrl);},1200);
     }else if(returnUrl){
       status('Kode terbaca. Membuka kembali Maintenance…');
       window.location.replace(returnUrl);
