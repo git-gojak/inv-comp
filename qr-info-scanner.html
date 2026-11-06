@@ -59,6 +59,13 @@ document.getElementById('startBtn').addEventListener('click',async()=>{
     statusEl.textContent='Arahkan kamera ke QR komputer atau printer.';
   }catch(err){statusEl.textContent='Kamera tidak dapat dibuka: '+(err.message||err);}
 });
+  window.addEventListener('load', function() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get('autoScan') === '1') {
+    document.getElementById('startBtn').click();
+  }
+});
 document.getElementById('stopBtn').addEventListener('click',async()=>{
   if(scanner){try{if(scanner.isScanning)await scanner.stop();statusEl.textContent='Kamera dimatikan.';}catch(e){statusEl.textContent='Kamera sudah berhenti.';}}
 });
